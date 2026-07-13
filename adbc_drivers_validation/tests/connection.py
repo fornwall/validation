@@ -1244,6 +1244,38 @@ class TestConnection:
         )
         assert len(schema) == 2
 
+    @pytest.mark.requires_features(["connection_transactions"])
+    def test_option_autocommit_int_coherence(
+        self,
+        driver: model.DriverQuirks,
+        conn: adbc_driver_manager.dbapi.Connection,
+    ) -> None:
+        # adbc.h (AdbcConnectionGetOptionInt): "For standard options, drivers
+        # must always support getting the option value (if they support
+        # getting option values at all) via the type specified in the option.
+        # (For example, an option set via SetOptionDouble must be retrievable
+        # via GetOptionDouble.)"  So if a driver accepts setting
+        # adbc.connection.autocommit via SetOptionInt, GetOptionInt on the
+        # same key must succeed and agree (and the string getter must agree
+        # too).  Drivers that reject the integer-typed set are skipped.
+        key = "adbc.connection.autocommit"
+        handle = conn.adbc_connection
+        try:
+            # A plain (non-bool) Python int routes through SetOptionInt.
+            handle.set_options(**{key: 1})
+        except conn.Error:
+            pytest.skip("driver does not accept an integer-typed autocommit")
+        try:
+            assert handle.get_option_int(key) == 1
+            assert handle.get_option(key) == "true"
+
+            handle.set_options(**{key: 0})
+            assert handle.get_option_int(key) == 0
+            assert handle.get_option(key) == "false"
+        finally:
+            # Restore autocommit (the fixture connection default).
+            handle.set_options(**{key: True})
+
     def test_unknown_option(
         self,
         subtests: pytest.Subtests,
