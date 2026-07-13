@@ -122,6 +122,51 @@ class TestStatement:
         assert result[0].to_pylist() == [2, 3, 4, 5]
 
     @pytest.mark.requires_features(["statement_bind"])
+    def test_parameter_execute_empty_bind(
+        self,
+        driver: model.DriverQuirks,
+        conn: adbc_driver_manager.dbapi.Connection,
+    ) -> None:
+        # The result schema is a property of the query, not of the number of
+        # bound rows: executing a parameterized query with a zero-row bound
+        # batch (e.g. DBAPI executemany with an empty parameter set) must
+        # return an empty result that still carries the query's real result
+        # schema, matching what a non-empty execution reports.
+        query = f"SELECT 1 + {driver.bind_parameter(1)}"
+
+        with conn.cursor() as cursor:
+            cursor.adbc_statement.set_sql_query(query)
+            cursor.adbc_statement.bind(
+                pyarrow.RecordBatch.from_pydict(
+                    {"0": pyarrow.array([1], type=pyarrow.int64())}
+                )
+            )
+            cursor.adbc_statement.prepare()
+            handle, _ = cursor.adbc_statement.execute_query()
+            expected_schema = (
+                pyarrow.RecordBatchReader._import_from_c(handle.address)
+                .read_all()
+                .schema
+            )
+
+        with conn.cursor() as cursor:
+            cursor.adbc_statement.set_sql_query(query)
+            cursor.adbc_statement.bind(
+                pyarrow.RecordBatch.from_pydict(
+                    {"0": pyarrow.array([], type=pyarrow.int64())}
+                )
+            )
+            cursor.adbc_statement.prepare()
+            handle, _ = cursor.adbc_statement.execute_query()
+            result = pyarrow.RecordBatchReader._import_from_c(handle.address).read_all()
+
+        assert result.num_rows == 0
+        assert result.schema.equals(expected_schema), (
+            f"empty bind returned schema {result.schema!r}, "
+            f"but a non-empty execution returns {expected_schema!r}"
+        )
+
+    @pytest.mark.requires_features(["statement_bind"])
     def test_parameter_null_typed(
         self,
         driver: model.DriverQuirks,

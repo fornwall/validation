@@ -145,7 +145,9 @@ class TestQuery:
                 # TODO: also test with stream
                 # TODO: also test with executequery, not executeupdate
                 # TODO: also test with multiple batches in stream
-                # TODO: also test with empty stream/empty batch
+                # TODO: also test with empty stream
+                # (an empty bound batch on the execute_query path is covered
+                # by TestStatement.test_parameter_execute_empty_bind)
                 data = subquery.bind_data().combine_chunks().to_batches()[0]
                 with conn.cursor() as cursor:
                     cursor.adbc_statement.set_sql_query(bind)
