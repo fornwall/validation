@@ -145,8 +145,10 @@ class TestStatement:
                 f"INSERT INTO {sample_table} ({id_}, {value}) "
                 f"VALUES ({driver.bind_parameter(1)}, {driver.bind_parameter(2)})"
             )
-            cursor.adbc_statement.bind(parameters)
+            # Prepare before Bind: some drivers (e.g. the Go FlightSQL
+            # driver) require it, and prepare-first works everywhere.
             cursor.adbc_statement.prepare()
+            cursor.adbc_statement.bind(parameters)
             cursor.adbc_statement.execute_update()
 
         with conn.cursor() as cursor:
