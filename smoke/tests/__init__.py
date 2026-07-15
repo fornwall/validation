@@ -11,18 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-[pytest]
-# The driver smoke tests in smoke/ have their own configuration
-# (smoke/pytest.ini) and are not collected by default.
-testpaths = tests
-
-junit_suite_name = validation
-junit_duration_report = call
-xfail_strict = true
-
-filterwarnings =
-    error
-
-markers =
-    feature: test for a driver-specific feature

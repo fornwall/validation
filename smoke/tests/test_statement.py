@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[pytest]
-# The driver smoke tests in smoke/ have their own configuration
-# (smoke/pytest.ini) and are not collected by default.
-testpaths = tests
+"""Run the statement-level validation tests against a real driver."""
 
-junit_suite_name = validation
-junit_duration_report = call
-xfail_strict = true
+import pytest
 
-filterwarnings =
-    error
+import adbc_drivers_validation.tests.statement
+from adbc_drivers_validation.tests.statement import (
+    TestStatement,  # noqa: F401
+)
 
-markers =
-    feature: test for a driver-specific feature
+from . import quirks
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    adbc_drivers_validation.tests.statement.generate_tests(
+        [quirks.selected_quirks()], metafunc
+    )
