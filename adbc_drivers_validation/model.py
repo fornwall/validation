@@ -124,7 +124,11 @@ class DriverFeatures(BaseModel):
     get_objects_constraints_primary: bool = Field(default=False)
     get_objects_constraints_unique: bool = Field(default=False)
     metadata_type_name: bool = Field(default=False)
+    select_fixture_setup: bool = Field(default=True)
     statement_bind: bool = Field(default=False)
+    statement_bind_test_mode: typing.Literal["insert", "select"] = Field(
+        default="insert"
+    )
     statement_bulk_ingest: bool = Field(default=False)
     statement_bulk_ingest_catalog: bool = Field(default=False)
     statement_bulk_ingest_schema: bool = Field(default=False)
